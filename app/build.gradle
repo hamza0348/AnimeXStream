@@ -34,7 +34,7 @@ android {
         useIR = true
     }
     defaultConfig {
-        applicationId "net.xblacky.animexstream"
+        applicationId "test.online.anime.tv.show"
         minSdkVersion 21
         targetSdkVersion 32
         versionCode 17
@@ -164,5 +164,12 @@ dependencies {
     androidTestImplementation("com.google.dagger:hilt-android-testing:2.38.1")
     androidTestImplementation("org.mockito:mockito-core:3.2.4")
     androidTestImplementation('androidx.test.espresso:espresso-core:3.4.0')
+
+
+    //Applovin
+    implementation 'com.applovin:applovin-sdk:+'
+
+    implementation 'androidx.lifecycle:lifecycle-process:2.2.0'
+
 
 }

@@ -46,6 +46,10 @@
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/header"
             />
+        <Constraint
+            app:layout_editor_absoluteY="703dp"
+            app:layout_editor_absoluteX="43dp"
+            android:id="@+id/ad_container" />
 
     </ConstraintSet>
 

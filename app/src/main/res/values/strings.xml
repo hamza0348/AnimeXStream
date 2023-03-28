@@ -34,4 +34,11 @@
     <string name="favourite_transition">favourite_transition</string>
     <string name="episode_transition">episode_transition</string>
     <string name="search_transition">search_transition</string>
+
+    <string name="applovin_sdk_key" translatable="false">5-hVNf6GrUtuRBEmp9bzes42ixkQ4kHPrHMC7vaZUFkFK4vZSRqF3t6lbrZBSdpXmmQJ45aEHBeeIC8CE_p4mm</string>
+    <string name="MaxInter" translatable="false">8dbea18b16d8e0a5</string>
+    <string name="MaxBanner" translatable="false">11284b42ec1abea8</string>
+    <string name="MaxOpen" translatable="false">ff01d03d163c1a9d</string>
+    <string name="MaxReward" translatable="false">60da1cfdb5cb05ed</string>
+
 </resources>

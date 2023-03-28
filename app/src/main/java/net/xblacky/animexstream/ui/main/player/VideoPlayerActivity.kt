@@ -8,6 +8,8 @@ import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.View
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
@@ -21,14 +23,24 @@ import java.lang.Exception
 import android.view.WindowInsetsController
 
 import android.view.WindowInsets
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.lifecycle.Observer
+import com.applovin.mediation.MaxAd
+import com.applovin.mediation.MaxError
+import com.applovin.mediation.MaxReward
+import com.applovin.mediation.MaxRewardedAdListener
+import com.applovin.mediation.ads.MaxRewardedAd
 import net.xblacky.animexstream.utils.preference.Preference
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 
 @AndroidEntryPoint
-class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener {
+class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener, MaxRewardedAdListener {
+
+    private lateinit var rewardedAd: MaxRewardedAd
+    private var retryAttempt = 0.0
 
     private val viewModel: VideoPlayerViewModel by viewModels()
 
@@ -40,6 +52,12 @@ class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_video_player)
+        createRewardedAd()
+        Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+            override fun run() {
+                show()
+            }
+        },5000)
 
         getExtra(intent)
         setObserver()
@@ -66,6 +84,8 @@ class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener {
 
     override fun onResume() {
         super.onResume()
+
+
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -109,15 +129,15 @@ class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener {
         }
     }
 
-    override fun onStop() {
-        if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
-            && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
-            && hasPipPermission()
-        ) {
-            finishAndRemoveTask()
-        }
-        super.onStop()
-    }
+//    override fun onStop() {
+//        if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
+//            && packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+//            && hasPipPermission()
+//        ) {
+//            finishAndRemoveTask()
+//        }
+//        super.onStop()
+//    }
 
     override fun finish() {
         if ((Build.VERSION.SDK_INT >= Build.VERSION_CODES.N)
@@ -301,5 +321,70 @@ class VideoPlayerActivity : AppCompatActivity(), VideoPlayerListener {
     fun refreshM3u8Url() {
         viewModel.fetchEpisodeData(forceRefresh = true)
     }
+
+
+    fun show(){
+        if ( rewardedAd.isReady() )
+        {
+            rewardedAd.showAd();
+        }
+    }
+
+
+    fun createRewardedAd()
+    {
+        rewardedAd = MaxRewardedAd.getInstance( getString(R.string.MaxReward), this )
+        rewardedAd.setListener( this )
+
+        rewardedAd.loadAd()
+    }
+
+    // MAX Ad Listener
+    override fun onAdLoaded(maxAd: MaxAd)
+    {
+        // Rewarded ad is ready to be shown. rewardedAd.isReady() will now return 'true'
+        // Reset retry attempt
+//        retryAttempt = 0.0
+    }
+
+    override fun onAdLoadFailed(adUnitId: String?, error: MaxError?)
+    {
+        // Rewarded ad failed to load
+        // We recommend retrying with exponentially higher delays up to a maximum delay (in this case 64 seconds)
+
+        retryAttempt++
+        val delayMillis = TimeUnit.SECONDS.toMillis( Math.pow( 2.0, Math.min( 6.0, retryAttempt ) ).toLong() )
+
+        Handler().postDelayed( { rewardedAd.loadAd() }, delayMillis )
+    }
+
+    override fun onAdDisplayFailed(ad: MaxAd?, error: MaxError?)
+    {
+        // Rewarded ad failed to display. We recommend loading the next ad
+        rewardedAd.loadAd()
+    }
+
+    override fun onAdDisplayed(maxAd: MaxAd) {
+        retryAttempt = 0.0
+    }
+
+    override fun onAdClicked(maxAd: MaxAd) {}
+
+    override fun onAdHidden(maxAd: MaxAd)
+    {
+        // rewarded ad is hidden. Pre-load the next ad
+        rewardedAd.loadAd()
+    }
+
+    override fun onRewardedVideoStarted(maxAd: MaxAd) {} // deprecated
+
+    override fun onRewardedVideoCompleted(maxAd: MaxAd) {} // deprecated
+
+    override fun onUserRewarded(maxAd: MaxAd, maxReward: MaxReward)
+    {
+        // Rewarded ad was displayed and user should receive the reward
+    }
+
+
 
 }

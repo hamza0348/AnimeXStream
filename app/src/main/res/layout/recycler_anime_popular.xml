@@ -72,4 +72,7 @@
         app:layout_constraintStart_toEndOf="@id/animeCardView"
         app:layout_constraintTop_toBottomOf="@+id/episodeNumber"
         android:layout_marginTop="8dp" />
+
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>

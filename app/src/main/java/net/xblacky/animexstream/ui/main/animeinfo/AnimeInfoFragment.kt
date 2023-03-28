@@ -2,9 +2,13 @@ package net.xblacky.animexstream.ui.main.animeinfo
 
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.Toast
 import androidx.constraintlayout.motion.widget.MotionLayout
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
@@ -14,6 +18,11 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.transition.TransitionInflater
+import com.applovin.mediation.MaxAd
+import com.applovin.mediation.MaxAdListener
+import com.applovin.mediation.MaxError
+import com.applovin.mediation.ads.MaxAdView
+import com.applovin.mediation.ads.MaxInterstitialAd
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions.withCrossFade
 import com.google.android.material.snackbar.Snackbar
@@ -32,10 +41,17 @@ import net.xblacky.animexstream.utils.Tags.GenreTags
 import net.xblacky.animexstream.utils.Utils
 import net.xblacky.animexstream.utils.model.AnimeInfoModel
 import net.xblacky.animexstream.utils.model.EpisodeModel
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class AnimeInfoFragment : Fragment(), AnimeInfoController.EpisodeClickListener {
+class AnimeInfoFragment : Fragment(), AnimeInfoController.EpisodeClickListener, MaxAdListener {
+
+    lateinit var interstitialAd: MaxInterstitialAd
+    var retryAttempt = 0.0
+
+    private var adView: MaxAdView? = null
+
 
     private lateinit var rootView: View
     private val episodeController: AnimeInfoController by lazy {
@@ -60,12 +76,30 @@ class AnimeInfoFragment : Fragment(), AnimeInfoController.EpisodeClickListener {
         savedInstanceState: Bundle?
     ): View {
         rootView = inflater.inflate(R.layout.fragment_animeinfo, container, false)
+        createInterstitialAd()
+
+        Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+            override fun run() {
+                show()
+            }
+        },3000)
 
         return rootView
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+
+        adView = MaxAdView(getString(R.string.MaxBanner), activity)
+
+        val rootView : FrameLayout = rootView.findViewById<FrameLayout>(R.id.ad_container)
+        rootView.addView(adView)
+
+        // Load the ad
+        adView?.loadAd()
+
+
         setPreviews()
         setupRecyclerView()
         setObserver()
@@ -260,5 +294,71 @@ class AnimeInfoFragment : Fragment(), AnimeInfoController.EpisodeClickListener {
             )
         )
     }
+
+
+
+    fun createInterstitialAd() {
+        interstitialAd = MaxInterstitialAd( getString(R.string.MaxInter), activity )
+        interstitialAd.setListener( this )
+        // Load the first ad
+        interstitialAd.loadAd()
+
+    }
+
+
+    fun show(){
+        if  ( interstitialAd.isReady ) {
+
+            interstitialAd.showAd()
+
+        }else{
+            Handler(Looper.getMainLooper()).postDelayed(object : Runnable {
+                override fun run() {
+                    show()
+                }
+            },3000)
+        }
+    }
+
+
+    // MAX Ad Listener
+    override fun onAdLoaded(maxAd: MaxAd)
+    {
+        // Interstitial ad is ready to be shown. interstitialAd.isReady() will now return 'true'
+
+        // Reset retry attempt
+        retryAttempt = 0.0
+    }
+
+    override fun onAdLoadFailed(adUnitId: String?, error: MaxError?)
+    {
+        // Interstitial ad failed to load
+        // AppLovin recommends that you retry with exponentially higher delays up to a maximum delay (in this case 64 seconds)
+
+        retryAttempt++
+        val delayMillis = TimeUnit.SECONDS.toMillis( Math.pow( 2.0, Math.min( 6.0, retryAttempt ) ).toLong() )
+
+        Handler().postDelayed( { interstitialAd.loadAd() }, delayMillis )
+    }
+
+    override fun onAdDisplayFailed(ad: MaxAd?, error: MaxError?)
+    {
+        // Interstitial ad failed to display. AppLovin recommends that you load the next ad.
+        interstitialAd.loadAd()
+    }
+
+    override fun onAdDisplayed(maxAd: MaxAd) {}
+
+    override fun onAdClicked(maxAd: MaxAd) {}
+
+    override fun onAdHidden(maxAd: MaxAd)
+    {
+        // Interstitial ad is hidden. Pre-load the next ad
+        interstitialAd.loadAd()
+    }
+
+
+
+
 
 }

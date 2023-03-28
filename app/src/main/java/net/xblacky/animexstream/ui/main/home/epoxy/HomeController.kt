@@ -121,6 +121,7 @@ class HomeController(var adapterCallbacks: EpoxyAdapterCallbacks) :
                     model = model,
                     sharedTitle = sharedTitle,
                     sharedImage = sharedImage
+
                 )
             }
         }
